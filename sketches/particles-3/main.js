@@ -1,41 +1,55 @@
 import { createEngine } from "../../shared/engine.js";
 import { Spring } from "../../shared/spring.js";
+import ParticleSystem from "./particleSystem.js";
 
 const { renderer, input, math, run, finish } = createEngine();
 const { ctx, canvas } = renderer;
 run(update);
+export default class App extends BaseApp {
+  constructor() {
+    super();
+    this.pathPoints = [];
+    this.particleSystem = new ParticleSystem();
 
-const spring = new Spring({
-  position: 0,
-  frequency: 2.5,
-  halfLife: 0.05,
-});
+    this.init();
+  }
+  x;
 
-function update(dt) {
-  if (input.isPressed()) {
-    spring.target = 0;
-  } else {
-    spring.target = 1;
+  async init() {
+    this.pathPoints = await Utils.loadSVG(
+      "sketches/particles-3/SVG/letter.svg"
+    );
+    this.animate();
   }
 
-  spring.step(dt);
+  getRandomPathPoint() {
+    const pathIndex = Math.floor(Math.random() * this.pathPoints.length);
+    const points = this.pathPoints[pathIndex];
+    const pointIndex = Math.floor(Math.random() * points.length);
+    return points[pointIndex];
+  }
 
-  const x = canvas.width / 2;
-  const y = canvas.height / 2;
-  const scale = Math.max(spring.position, 0);
+  generateParticles() {
+    if (this.mouse.isPressed && this.pathPoints.length > 0) {
+      for (let i = 0; i < 3; i++) {
+        const targetPoint = this.getRandomPathPoint();
+        this.particleSystem.addParticle(
+          this.mouse.x,
+          this.mouse.y,
+          targetPoint.x,
+          targetPoint.y
+        );
+      }
+    }
+  }
 
-  ctx.fillStyle = "black";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  animate() {
+    this.ctx.fillStyle = "rgba(0, 0, 0, 1)";
+    this.ctx.fillRect(0, 0, this.width, this.height);
+    this.generateParticles();
+    this.particleSystem.update();
+    this.particleSystem.draw(this.ctx);
 
-  ctx.fillStyle = "white";
-  ctx.textBaseline = "middle";
-  ctx.font = `${canvas.height}px Helvetica Neue, Helvetica , bold`;
-  ctx.textAlign = "center";
-  ctx.translate(x, y);
-  ctx.scale(scale, scale);
-  ctx.fillText("3", 0, 0);
-
-  if (scale <= 0) {
-    finish();
+    requestAnimationFrame(() => this.animate());
   }
 }

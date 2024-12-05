@@ -6,18 +6,18 @@ const { renderer, input, math, run, finish } = createEngine();
 const { ctx, canvas } = renderer;
 run(update);
 
-const particles = [];
+let particles = [];
 let specialCharPosPX;
 
-// Initial grid creation
+let threeAsbeenFound = false;
+
 createGrid();
 
-// Handle window resize
 window.addEventListener("resize", handleResize.bind(this));
 
 function handleResize() {
-  particles = []; // Clear particles
-  createGrid(); // Recreate grid
+  particles = [];
+  createGrid();
 }
 
 function createGrid() {
@@ -68,7 +68,6 @@ function createGrid() {
 }
 
 function update() {
-  console.log("Draw");
   ctx.fillStyle = "black";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -77,27 +76,45 @@ function update() {
     const dy = particle.y - input.getY();
     const distance = Math.sqrt(dx * dx + dy * dy);
 
-    let variation = 0;
-
     const sx = specialCharPosPX.x - input.getX();
     const sy = specialCharPosPX.y - input.getY();
 
     const distanceWithSpecialChar = Math.sqrt(sx * sx + sy * sy);
     const progress = math.mapClamped(distanceWithSpecialChar, 100, 600, 1, 0);
-
     const maxDistance = math.mapClamped(progress, 0, 1, 200, 30);
+    let scale;
 
-    let scale = Math.max(0.2, 2 - distance / maxDistance);
-    //scale = scale * (1 + variation);
+    if (particle.isSpecial) {
+      particle.color = "red";
+    }
+
+    if (!threeAsbeenFound) {
+      scale = Math.max(0.2, 2 - distance / maxDistance);
+    } else {
+      if (particle.isSpecial) {
+        particle.color = "red";
+        scale = 12;
+        particle.x = canvas.width / 2;
+        particle.y = canvas.height / 2;
+      } else {
+        scale = 0.2;
+      }
+    }
+
+    let specialParticleScale = false;
+
     particle.scale = scale;
-    particle.color = particle.letter === "3" ? "red" : "white";
 
     if (input.isPressed()) {
-      if (particle.isSpecial) {
-      } else {
-        const force = Math.max(0, 100 - distance) / 100;
-        particle.vx += force * dx * 0.5;
-        particle.vy += force * dy * 0.5;
+      if (!particle.isSpecial) {
+        const force = Math.max(0, 150 - distance) / 100;
+        particle.vx += force * dx * 1;
+        particle.vy += force * dy * 1;
+      }
+    }
+    if (input.isDown()) {
+      if (particle.isSpecial && distanceWithSpecialChar < 20) {
+        threeAsbeenFound = true;
       }
     }
 
