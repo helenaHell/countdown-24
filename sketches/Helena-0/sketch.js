@@ -17,6 +17,9 @@ let offsetY = 0;
 let mouseX = 0;
 let mouseY = 0;
 
+let counterForEnd = 0;
+let theend = false;
+
 const targetCount = 500;
 
 async function init() {
@@ -88,9 +91,27 @@ function update(deltaTime) {
     } else {
       particle.setTarget(particle.endTarget.x, particle.endTarget.y); // Ensure setTarget() exists
     }
-    particle.update(deltaTime);
-    particle.draw(ctx);
+
+    if (!theend) {
+      particle.update(deltaTime);
+      particle.draw(ctx);
+    }
   });
+
+  if (input.isPressed()) {
+    counterForEnd++;
+  }
+  if (!input.isPressed()) {
+    counterForEnd = 0;
+  }
+
+  if (counterForEnd > 1000) {
+    console.log("the end ?");
+    theend = true;
+    if (counterForEnd > 1001) {
+      finish();
+    }
+  }
 
   particles = particles.filter((p) => !p.isDead);
 }

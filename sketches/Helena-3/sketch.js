@@ -1,9 +1,10 @@
 import { createEngine } from "../../shared/engine.js";
 
-const { renderer, input, run } = createEngine();
+const { renderer, input, run, finish } = createEngine();
 const { ctx, canvas } = renderer;
 
 const gridParts = [];
+const gridPartsCompleted = [];
 let mouseX = 0;
 let mouseY = 0;
 
@@ -74,6 +75,7 @@ img.onload = () => {
         velocityY: 0, // Initial velocity Y
         isAligned: false, // Track if the part is aligned in Phase 2
         opacity: 0.5, // Initial opacity
+        completed: false, // Add this property
       });
     }
   }
@@ -96,7 +98,7 @@ function update() {
 
   let allAligned = true; // Check if all parts are aligned in Phase 1
   let allOpacityStable = true; // Check if all parts reached phase2Opacity in Phase 2
-  let phase3Completed = true; // Assume Phase 3 is completed until proven otherwise
+  let phase3Completed = false; // Assume Phase 3 is completed until proven otherwise
 
   gridParts.forEach((part) => {
     if (phase === 1) {
@@ -176,6 +178,19 @@ function update() {
     ctx.drawImage(part.canvas, part.currentX, part.currentY);
   });
 
+  if (phase === 3) {
+    gridParts.forEach((part) => {
+      if (part.opacity >= 0.7 && !part.completed) {
+        gridPartsCompleted.push(part);
+        part.completed = true; // Mark as completed
+      }
+    });
+  }
+
+  if (gridPartsCompleted.length > 40) {
+    phase3Completed = true;
+  }
+
   ctx.globalAlpha = 1;
 
   if (phase === 1 && allAligned) {
@@ -194,6 +209,10 @@ function update() {
   }
 
   if (phase === 3 && phase3Completed) {
-    console.log("Phase 3 completed");
+    ctx.fillStyle = "black";
+    ctx.rect(0, 0, canvas.width, canvas.height);
+    ctx.fill();
+
+    finish();
   }
 }
