@@ -14,6 +14,10 @@ let startPoint;
 let clickPositionX;
 let clickPositionY;
 const pointRadius = 10;
+let globalOpacity = 1; // Opacité initiale
+let opacityTransitioning = false;
+const opacityTransitionSpeed = 0.4; // Contrôle la vitesse de la transition (ajustez selon vos besoins)
+const opacityTarget = 0.1;
 
 //CREATE POINTS
 const points = [
@@ -130,11 +134,13 @@ const particles = createParticles(100, gridBounds, canvas.width, canvas.height);
 
 /////////////UPDATE
 function update(deltaTime) {
-  ctx.fillStyle = "black";
+  ctx.fillStyle = `rgba(0, 0, 0, ${globalOpacity})`;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   const mouseX = input.getX();
   const mouseY = input.getY();
+
+  ctx.globalAlpha = globalOpacity;
 
   particles.forEach((p) => {
     pushParticle(p, mouseX, mouseY, 100, 300, 1000, 0);
@@ -145,6 +151,22 @@ function update(deltaTime) {
 
   updateParticles(deltaTime, particles, canvas.width, canvas.height, 3, 10);
   drawParticles(ctx, particles);
+
+  // Points et lignes
+  ctx.fillStyle = `rgba(255, 255, 255, ${globalOpacity})`;
+  points.forEach((point) => {
+    ctx.beginPath();
+    ctx.ellipse(
+      point.positionX,
+      point.positionY,
+      point.radius,
+      point.radius,
+      0,
+      0,
+      Math.PI * 2
+    );
+    ctx.fill();
+  });
 
   if (input.isDown()) {
     clickPositionX = mouseX;
@@ -186,7 +208,7 @@ function update(deltaTime) {
           clickPositionX,
           clickPositionY
         );
-        console.log(clickSide, mouseSide);
+
         if (clickSide !== mouseSide) {
           deleteLine(line);
           break;
@@ -254,10 +276,6 @@ function update(deltaTime) {
     }
   }
 
-  const finished = !failed;
-
-  if (finished) console.log("finish");
-
   ctx.fillStyle = "white";
   for (let i = 0; i < points.length; i++) {
     const point = points[i];
@@ -291,6 +309,38 @@ function update(deltaTime) {
     ctx.moveTo(startPoint.positionX, startPoint.positionY);
     ctx.lineTo(currentLineX, currentLineY);
     ctx.stroke();
+  }
+
+  let isComplete = true;
+
+  for (let i = 0; i < points.length; i++) {
+    const nextIndex = (i + 1) % points.length; // Pour boucler de 13 à 1
+    const foundLine = lines.find((line) => {
+      const startId = points.indexOf(line.startPoint);
+      const endId = points.indexOf(line.endPoint);
+      return (
+        (startId === i && endId === nextIndex) ||
+        (endId === i && startId === nextIndex)
+      );
+    });
+
+    if (!foundLine) {
+      isComplete = false;
+      break;
+    }
+  }
+
+  if (isComplete && globalOpacity > opacityTarget) {
+    console.log("All points are connected, starting opacity transition...");
+    // Réduire l'opacité progressivement
+    globalOpacity -= deltaTime * opacityTransitionSpeed;
+
+    // Vérifier si on a atteint la cible d'opacité
+    if (globalOpacity <= opacityTarget) {
+      globalOpacity = opacityTarget; // Empêche de descendre en dessous
+      console.log("Opacity target reached, finishing...");
+      finish(); // Appelle finish() une fois l'opacité cible atteinte
+    }
   }
 }
 
